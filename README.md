@@ -34,5 +34,5 @@ root:
 The following is the toString print result of the object after parsing is completed.
 
 ```
-{root=RootConfig{ints=[1, 2, 3], map={0=true, 1=false, 2=false}, objectType=com.os467.testEntity.ObjectType@61443d8f, x=true, anInt=123, aByte=1, aChar=w, aShort=1, aLong=12, aDouble=1.0, aFloat=3.4, test='"测试数据"'}}
+{root=RootConfig{ints=[1, 2, 3], map={0=true, 1=false, 2=false}, objectType=com.os467.testEntity.ObjectType@5e481248, x=true, anInt=123, aByte=1, aChar=w, aShort=1, aLong=12, aDouble=1.0, aFloat=3.4, test='"test"'}}
 ```
