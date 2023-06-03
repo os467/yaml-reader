@@ -3,10 +3,12 @@ package com.os467;
 
 import com.os467.annotation.YamlConfigValue;
 import com.os467.exception.ConfigEventNotFoundException;
+import sun.net.www.content.text.Generic;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +64,16 @@ public class YamlObjectFactory implements ConfigObjectFactory {
         }
     }
 
+    /**
+     * 根据泛型类型名称判断类型
+     * 接口会带有interface关键字
+     * 类类型会带有class关键字
+     * 基本数据类型 对应其本身关键字
+     * 带泛型的类型，没有class或是interface关键字
+     * @param objClass
+     * @param fatherEvent
+     * @return
+     */
     private Object createObject(Class objClass, YamlConfigEvent fatherEvent) {
         Object obj = null;
         try {
@@ -79,28 +91,12 @@ public class YamlObjectFactory implements ConfigObjectFactory {
             if (fieldValue != null){
                 //注入依赖
                 genericType = declaredFields[i].getGenericType();
+
                 //获取属性全类名
                 String fieldClassName = genericType.toString().replace("class ", "");
 
-                //被注入的实例
-                Object injectObj;
-                //实例配置的值
-                String childEventValue = fatherEvent.getChildEventValue(fieldValue.value());
-                //基础类型创建
-                injectObj = selectType(fieldClassName, childEventValue);
-
-                if (injectObj == null){
-                    //创建复杂类型，该类需要存在在
-                    Class<?> eventClass = null;
-                    try {
-                        eventClass = Class.forName(fieldClassName);
-                    } catch (ClassNotFoundException e) {
-                        e.printStackTrace();
-                    }
-
-                    YamlConfigEvent childEvent = fatherEvent.getChildEvent(fieldValue.value());
-                    injectObj = createObject(eventClass, childEvent);
-                }
+                //获取到注入的实例
+                Object injectObj = getInjectObj(fatherEvent, fieldValue.value(), fieldClassName);
 
                 //打破封装
                 declaredFields[i].setAccessible(true);
@@ -116,7 +112,116 @@ public class YamlObjectFactory implements ConfigObjectFactory {
     }
 
     /**
-     * 选择类
+     * 获取到注入实例的方法
+     * 如果是一个常用数据类型，则返回的常用数据类型值不为null
+     * 交由
+     * @param fatherEvent
+     * @param fieldValue
+     * @param fieldClassName
+     * @return
+     */
+    private Object getInjectObj(YamlConfigEvent fatherEvent, String fieldValue, String fieldClassName) {
+        //被注入的实例
+        Object injectObj;
+
+        //实例配置的值
+        String childEventValue = fatherEvent.getChildEventValue(fieldValue);
+        //常用数据类型创建
+        injectObj = selectType(fieldClassName, childEventValue);
+        if (injectObj == null) {
+            //创建复杂数据类型
+            List<String> childEventValues = fatherEvent.getChildEventValues(fieldValue);
+            if (childEventValues != null) {
+                //复杂数据类型创建
+                injectObj = selectType(fieldClassName, childEventValues);
+            }
+
+            //创建类类型
+            if (injectObj == null) {
+                //创建类类型，该类字节码需要存在
+                Class<?> eventClass = null;
+                try {
+                    eventClass = Class.forName(fieldClassName);
+                } catch (ClassNotFoundException e) {
+                    e.printStackTrace();
+                }
+
+                YamlConfigEvent childEvent = fatherEvent.getChildEvent(fieldValue);
+                injectObj = createObject(eventClass, childEvent);
+            }
+        }
+        return injectObj;
+    }
+
+
+    /**
+     * 复杂数据类型选择并创建实例
+     * @param fieldClassName
+     * @param childEventValues
+     * @return
+     */
+    private Object selectType(String fieldClassName,List<String> childEventValues){
+        Object injectObj = null;
+        int s = fieldClassName.indexOf("<");
+        if (s == -1){
+            //无泛型
+            //去除接口关键字
+            fieldClassName = fieldClassName.replace("interface ","");
+            switch (fieldClassName){
+                case "java.util.List":{
+                    //默认为ArrayList
+                    List objects = new ArrayList<>();
+                    for (int i = 0; i < childEventValues.size(); i++) {
+                        objects.add(childEventValues.get(i));
+                    }
+                    injectObj = objects;
+                    break;
+                }
+                case "java.util.Map":{
+                    //默认为哈希集合
+                    Map hashMap = new HashMap();
+                    for (int i = 0; i < childEventValues.size(); i++) {
+                        hashMap.put(i,childEventValues.get(i));
+                    }
+                    injectObj = hashMap;
+                    break;
+                }
+            }
+        }else {
+            //存在泛型
+            int e = fieldClassName.indexOf(">");
+            //获取到泛型名
+            String genericName = fieldClassName.substring(s+1,e);
+            fieldClassName = fieldClassName.substring(0,s);
+            switch (fieldClassName){
+                case "java.util.List":{
+                    //默认为ArrayList
+                    List objects = new ArrayList<>();
+                    for (int i = 0; i < childEventValues.size(); i++) {
+                        objects.add(selectType(genericName,childEventValues.get(i)));
+                    }
+                    injectObj = objects;
+                    break;
+                }
+                case "java.util.Map":{
+                    //默认为哈希集合
+                    Map hashMap = new HashMap();
+                    String[] keyAndValueGenericName = genericName.split(",");
+                    String keyGenericName = keyAndValueGenericName[0];
+                    String valueGenericName = keyAndValueGenericName[1].replace(" ","");
+                    for (int i = 0; i < childEventValues.size(); i++) {
+                        hashMap.put(selectType(keyGenericName,String.valueOf(i)),selectType(valueGenericName,childEventValues.get(i)));
+                    }
+                    injectObj = hashMap;
+                    break;
+                }
+            }
+        }
+        return injectObj;
+    }
+
+    /**
+     * 选择常用数据类型并创建实例
      * @param fieldClassName
      * @param childEventValue
      * @return

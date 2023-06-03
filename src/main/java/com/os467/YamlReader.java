@@ -108,10 +108,16 @@ public class YamlReader extends AbstractConfigReader{
                 String value = getValue(line, level);
                 //生成子配置
                 String eventName = getEventName(line, level);
-                YamlConfigEvent child = new YamlConfigEvent(father, level, eventName,value,null);
-                father.addChildEvent(child);
-                //检查子配置
-                stack.push(child);
+                if (eventName == null){
+                    //数组类型,添加到父类的值上
+                    father.addToValues(value);
+                }else {
+                    //为子配置
+                    YamlConfigEvent child = new YamlConfigEvent(father, level, eventName,value,null);
+                    father.addChildEvent(child);
+                    //检查子配置
+                    stack.push(child);
+                }
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -144,7 +150,7 @@ public class YamlReader extends AbstractConfigReader{
     private String getValue(String line, int level) {
         if (line.charAt(level * 2) == '-'){
             //数组值
-            return line.substring(level * 2);
+            return line.substring(level * 2 + 1);
         }
         int i = line.indexOf(":");
         if (line.length() - 1 == i){

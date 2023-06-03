@@ -2,7 +2,9 @@ package com.os467;
 
 import com.os467.exception.ConfigEventNotFoundException;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class YamlConfigEvent implements ConfigEvent {
@@ -18,6 +20,9 @@ public class YamlConfigEvent implements ConfigEvent {
 
     //yaml配置值,若不存在值则为null
     private String value;
+
+    //yaml配置值，数组类型
+    private List<String> values;
 
     //若存在子项配置则启用
     private Map<String,YamlConfigEvent> children;
@@ -97,17 +102,29 @@ public class YamlConfigEvent implements ConfigEvent {
     }
 
     /**
-     * 获取值
+     * 获取值 复杂数据类型配置
+     * @param eventName
+     * @return
+     */
+    public List<String> getChildEventValues(String eventName) {
+        YamlConfigEvent childEvent = children.get(eventName);
+        if (childEvent == null){
+            throw new ConfigEventNotFoundException("没有此配置: "+ getPath() + eventName);
+        }
+        return childEvent.values;
+    }
+
+    /**
+     * 获取值 常见数据类型配置
      * @param eventName
      * @return
      */
     public String getChildEventValue(String eventName) {
-        YamlConfigEvent yamlConfigEvent = children.get(eventName);
-        if (yamlConfigEvent == null){
+        YamlConfigEvent childEvent = children.get(eventName);
+        if (childEvent == null){
             throw new ConfigEventNotFoundException("没有此配置: "+ getPath() + eventName);
         }
-        String value = yamlConfigEvent.getValue();
-        return value;
+        return childEvent.value;
     }
 
     private String getPath() {
@@ -116,4 +133,22 @@ public class YamlConfigEvent implements ConfigEvent {
         }
         return father.getPath() + name + ":";
     }
+
+    /**
+     * 保存数组值
+     * @param value
+     */
+    public void addToValues(String value) {
+        if (values == null){
+            values = new ArrayList<>();
+        }
+        if (value.length() > 1){
+            if (value.charAt(0) == ' '){
+                value = value.substring(1);
+            }
+        }
+        values.add(value);
+    }
+
+
 }
