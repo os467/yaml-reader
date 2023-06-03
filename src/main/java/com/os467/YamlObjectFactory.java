@@ -2,83 +2,65 @@ package com.os467;
 
 
 import com.os467.annotation.YamlConfigValue;
+import com.os467.exception.ConfigEventNotFoundException;
 
 import java.io.File;
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
  * Yaml配置对象工厂
  */
-public class YamlObjectFactory {
-
-    //包路径
-    private static final String PACKAGE = "com.os467";
-
-    //字节码所在位置
-    private static final String SCAN_PATH = System.getProperty("user.dir") + "\\target\\classes\\" + PACKAGE.replace(".","\\");
+public class YamlObjectFactory implements ConfigObjectFactory {
 
     private Map<String,YamlConfigEvent> rootMap;
 
     private YamlConfigEvent event;
 
+    private ClassScanner classScanner = new ClassScanner();
+
     //工厂仓库
     private static Map<String,Object> wareHouse = new HashMap<>();
 
-    public void inject(Map<String, YamlConfigEvent> rootMap) {
+    public void produce(Map rootMap) {
         this.rootMap = rootMap;
-        inject();
-        for (String s : wareHouse.keySet()) {
-            Object o = wareHouse.get(s);
-            System.out.println(o);
-        }
+        produce();
+        System.out.println(wareHouse);
+    }
+
+    @Override
+    public Object getProduct(String name) {
+        return wareHouse.get(name);
     }
 
 
-    private void inject() {
-        scanClassType();
-    }
-
-    /**
-     * 扫描类类型依赖，对应根配置
-     */
-    private void scanClassType() {
-        File file = new File(SCAN_PATH);
-        handleFile(file,PACKAGE);
-    }
-
-    private void handleFile(File file,String packagePath) {
-        if (file.isDirectory()){
-            File[] files = file.listFiles();
-            for (int i = 0; i < files.length; i++) {
-                handleFile(files[i],packagePath+"."+files[i].getName());
-            }
-        }else {
-            //不是一个文件夹
-            String extendName = getExtendName(file.getName());
-            if (extendName.equals(".class")){
-                String className = packagePath.replace(".class", "");
-                try {
-                    Class<?> aClass = Class.forName(className);
-                    YamlConfigValue configValue = aClass.getDeclaredAnnotation(YamlConfigValue.class);
-                    if (configValue != null){
-                        String rootEventName = configValue.value();
-                        //获取到对应的根配置
-                        event = rootMap.get(rootEventName);
+    private void produce() {
+        List<String> classNameList = classScanner.scanClassType();
+        for (int i = 0; i < classNameList.size(); i++) {
+            try {
+                Class<?> aClass = Class.forName(classNameList.get(i));
+                YamlConfigValue configValue = aClass.getDeclaredAnnotation(YamlConfigValue.class);
+                if (configValue != null){
+                    String rootEventName = configValue.value();
+                    //获取到对应的根配置
+                    event = rootMap.get(rootEventName);
+                    if (event == null){
+                        throw new ConfigEventNotFoundException(rootEventName);
+                    }
+                    if (wareHouse.get(rootEventName) == null){
                         //创建Yaml配置对象，注入依赖，存入仓库
                         Object object = createObject(aClass, event);
                         wareHouse.put(rootEventName,object);
                     }
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
                 }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             }
         }
     }
-
-
 
     private Object createObject(Class objClass, YamlConfigEvent fatherEvent) {
         Object obj = null;
@@ -101,7 +83,7 @@ public class YamlObjectFactory {
                 String fieldClassName = genericType.toString().replace("class ", "");
 
                 //被注入的实例
-                Object injectObj = null;
+                Object injectObj;
                 //实例配置的值
                 String childEventValue = fatherEvent.getChildEventValue(fieldValue.value());
                 //基础类型创建
@@ -218,14 +200,5 @@ public class YamlObjectFactory {
             }
         }
         return injectObj;
-    }
-
-    /**
-     * 获取文件拓展名
-     * @param fileName
-     * @return
-     */
-    private String getExtendName(String fileName) {
-        return fileName.substring(fileName.lastIndexOf('.'));
     }
 }
