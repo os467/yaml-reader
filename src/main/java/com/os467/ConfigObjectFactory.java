@@ -12,4 +12,7 @@ public interface ConfigObjectFactory {
 
     Object getProduct(String name);
 
+    Object getProductByClassName(String className);
+
+    Object getProductByInterfaceName(String interfaceName);
 }

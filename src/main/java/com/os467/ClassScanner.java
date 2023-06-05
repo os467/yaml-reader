@@ -16,19 +16,26 @@ public class ClassScanner {
     private static List<String> classNameList;
 
     /**
-     * 扫描类类型
+     * 获取字节码列表
      */
-    public List<String> scanClassType() {
+    public List<String> getClassNameList(){
         if (classNameList == null){
             synchronized (this){
                 if (classNameList == null){
                     classNameList = new ArrayList<>();
-                    File file = new File(SCAN_PATH);
-                    handleFile(file,PACKAGE);
+                    scanClassType();
                 }
             }
         }
         return classNameList;
+    }
+
+    /**
+     * 扫描类类型
+     */
+    private void scanClassType() {
+        File file = new File(SCAN_PATH);
+        handleFile(file,PACKAGE);
     }
 
     private void handleFile(File file,String packagePath) {
@@ -47,8 +54,13 @@ public class ClassScanner {
         }
     }
 
-
+    /**
+     * 获取文件拓展名
+     * @param fileName
+     * @return
+     */
     private String getExtendName(String fileName) {
         return fileName.substring(fileName.lastIndexOf('.'));
     }
+
 }

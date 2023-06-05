@@ -109,7 +109,7 @@ public class YamlConfigEvent implements ConfigEvent {
     public List<String> getChildEventValues(String eventName) {
         YamlConfigEvent childEvent = children.get(eventName);
         if (childEvent == null){
-            throw new ConfigEventNotFoundException("没有此配置: "+ getPath() + eventName);
+            throw new ConfigEventNotFoundException("配置项丢失: "+ getPath() + eventName);
         }
         return childEvent.values;
     }
@@ -122,7 +122,7 @@ public class YamlConfigEvent implements ConfigEvent {
     public String getChildEventValue(String eventName) {
         YamlConfigEvent childEvent = children.get(eventName);
         if (childEvent == null){
-            throw new ConfigEventNotFoundException("没有此配置: "+ getPath() + eventName);
+            throw new ConfigEventNotFoundException("配置项丢失: "+ getPath() + eventName);
         }
         return childEvent.value;
     }

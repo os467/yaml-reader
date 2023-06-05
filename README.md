@@ -43,7 +43,7 @@ Test Class
 ```java
 package com.os467.testEntity;
 
-import com.os467.annotation.YamlConfigValue;
+import com.os467.annotation.yamlConfig.YamlConfigValue;
 
 import java.util.List;
 import java.util.Map;
@@ -55,7 +55,7 @@ public class RootConfig {
     private List ints;
 
     @YamlConfigValue("map")
-    private Map<Integer,String> map;
+    private Map<Integer, String> map;
 
     @YamlConfigValue("objectType")
     private ObjectType objectType;
@@ -109,11 +109,11 @@ public class RootConfig {
 
 ```
 
-
 ```java
 package com.os467.testEntity;
 
-import com.os467.annotation.YamlConfigValue;
+import com.os467.annotation.yamlConfig.YamlConfigValue;
+import com.os467.annotation.yamlConfig.YamlConfigValue;
 
 public class ObjectType {
 

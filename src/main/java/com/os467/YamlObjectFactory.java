@@ -1,17 +1,14 @@
 package com.os467;
 
 
-import com.os467.annotation.YamlConfigValue;
+import com.os467.annotation.yamlConfig.YamlConfigValue;
 import com.os467.exception.ConfigEventNotFoundException;
-import sun.net.www.content.text.Generic;
+import com.os467.exception.ConfigInjectException;
 
-import java.io.File;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Yaml配置对象工厂
@@ -22,7 +19,7 @@ public class YamlObjectFactory implements ConfigObjectFactory {
 
     private YamlConfigEvent event;
 
-    private ClassScanner classScanner = new ClassScanner();
+    private ClassScanner classScanner = SingletonFactory.classScanner;
 
     //工厂仓库
     private static Map<String,Object> wareHouse = new HashMap<>();
@@ -30,7 +27,6 @@ public class YamlObjectFactory implements ConfigObjectFactory {
     public void produce(Map rootMap) {
         this.rootMap = rootMap;
         produce();
-        System.out.println(wareHouse);
     }
 
     @Override
@@ -38,9 +34,61 @@ public class YamlObjectFactory implements ConfigObjectFactory {
         return wareHouse.get(name);
     }
 
+    @Override
+    public Object getProductByClassName(String className) {
+        return getOnlyOneClass(className);
+    }
+
+    @Override
+    public Object getProductByInterfaceName(String interfaceName) {
+        return getOnlyOneInterface(interfaceName);
+    }
+
+    /**
+     * 返回唯一类实例
+     * @param className
+     * @return
+     */
+    private Object getOnlyOneClass(String className) {
+        return getObject(className);
+    }
+
+    /**
+     * 返回唯一接口实例
+     * @param interfaceName
+     * @return
+     */
+    private Object getOnlyOneInterface(String interfaceName) {
+        return getObject(interfaceName);
+    }
+
+    private Object getObject(String name) {
+        Class<?> clazzClass = null;
+        Object ret = null;
+        try {
+            clazzClass = Class.forName(name);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+        int time = 0;
+        Iterator<Map.Entry<String, Object>> iterator = wareHouse.entrySet().iterator();
+        while (iterator.hasNext()) {
+            //父类型引用，只能存在唯一的子类或父类实例
+            Map.Entry<String, Object> entry = iterator.next();
+            Class<?> aClass = entry.getValue().getClass();
+            if (clazzClass.isAssignableFrom(aClass)){
+                time++;
+                ret = entry.getValue();
+            }
+        }
+        if (time != 1){
+            throw new ConfigInjectException("类或接口配置实例不唯一");
+        }
+        return ret;
+    }
 
     private void produce() {
-        List<String> classNameList = classScanner.scanClassType();
+        List<String> classNameList = classScanner.getClassNameList();
         for (int i = 0; i < classNameList.size(); i++) {
             try {
                 Class<?> aClass = Class.forName(classNameList.get(i));
@@ -92,7 +140,7 @@ public class YamlObjectFactory implements ConfigObjectFactory {
                 //注入依赖
                 genericType = declaredFields[i].getGenericType();
 
-                //获取属性全类名
+                //获取属性全类名(清除class标记)
                 String fieldClassName = genericType.toString().replace("class ", "");
 
                 //获取到注入的实例
