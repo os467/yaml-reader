@@ -1,4 +1,4 @@
-package com.os467.annotation.yamlConfig;
+package com.os467.lib.annotation.yamlConfig;
 
 
 import java.lang.annotation.ElementType;

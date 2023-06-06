@@ -1,8 +1,10 @@
-package com.os467;
+package com.os467.lib.singleton;
 
 
-import com.os467.annotation.SingletonInjection;
-import com.os467.annotation.SingletonObject;
+import com.os467.lib.DefaultClassScanner;
+import com.os467.lib.annotation.SingletonInjection;
+import com.os467.lib.annotation.SingletonObject;
+import com.os467.lib.factory.ObjectFactory;
 
 import java.lang.reflect.Field;
 import java.util.*;
@@ -35,7 +37,7 @@ import java.util.*;
  * Finally the current semi-finished product is placed in the cache.
  *
  */
-public class SingletonFactory {
+public class SingletonFactory implements ObjectFactory {
 
     //First Scan produce all @Singleton object's half product
     //half product register a list of the Objects that it needs but haven't create and put it to the map
@@ -43,14 +45,14 @@ public class SingletonFactory {
     //if create the next Product ,we need check the list,give this product's instance reference to the needed Product on the list
     //remove the Product -> List<half Product> event in the map
 
-    public static ClassScanner classScanner = new ClassScanner();
+    public static DefaultClassScanner defaultClassScanner = new DefaultClassScanner();
 
     private static Map productCache = new HashMap();
 
     private static Map<String,List<String>> referenceMap = new HashMap();
 
     public static void produce(){
-        List<String> classNameList = classScanner.getClassNameList();
+        List<String> classNameList = defaultClassScanner.getClassNameList();
         for (String productClassName : classNameList) {
             try {
                 Class<?> aClass = Class.forName(productClassName);
@@ -122,4 +124,5 @@ public class SingletonFactory {
     public static <T>T getSingletonObject(Class<T> aClass) {
         return (T)productCache.get(aClass.getName());
     }
+
 }

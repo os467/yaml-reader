@@ -1,9 +1,12 @@
-package com.os467;
+package com.os467.lib.yaml;
 
 
-import com.os467.annotation.yamlConfig.YamlConfigValue;
-import com.os467.exception.ConfigEventNotFoundException;
-import com.os467.exception.ConfigInjectException;
+import com.os467.lib.DefaultClassScanner;
+import com.os467.lib.singleton.SingletonFactory;
+import com.os467.lib.annotation.yamlConfig.YamlConfigValue;
+import com.os467.lib.exception.ConfigEventNotFoundException;
+import com.os467.lib.exception.ConfigInjectException;
+import com.os467.lib.factory.YamlConfigFactory;
 
 
 import java.lang.reflect.Field;
@@ -13,31 +16,37 @@ import java.util.*;
 /**
  * Yaml配置对象工厂
  */
-public class YamlObjectFactory implements ConfigObjectFactory {
+public class DefaultYamlConfigFactory implements YamlConfigFactory {
 
-    private Map<String,YamlConfigEvent> rootMap;
+    //需要被处理的数据源
+    private Map<String,YamlConfigEvent> configMap;
 
+    //当前处理的配置项
     private YamlConfigEvent event;
 
-    private ClassScanner classScanner = SingletonFactory.classScanner;
+    //类扫描器
+    private static DefaultClassScanner defaultClassScanner = SingletonFactory.defaultClassScanner;
 
     //工厂仓库
     private static Map<String,Object> wareHouse = new HashMap<>();
 
-    public void produce(Map rootMap) {
-        this.rootMap = rootMap;
+    @Override
+    public void produce(Map configMap) {
+        this.configMap = configMap;
         produce();
     }
 
     @Override
-    public Object getProduct(String name) {
+    public Object getProductByName(String name) {
         return wareHouse.get(name);
     }
+
 
     @Override
     public Object getProductByClassName(String className) {
         return getOnlyOneClass(className);
     }
+
 
     @Override
     public Object getProductByInterfaceName(String interfaceName) {
@@ -81,14 +90,14 @@ public class YamlObjectFactory implements ConfigObjectFactory {
                 ret = entry.getValue();
             }
         }
-        if (time != 1){
+        if (time > 1){
             throw new ConfigInjectException("类或接口配置实例不唯一");
         }
         return ret;
     }
 
     private void produce() {
-        List<String> classNameList = classScanner.getClassNameList();
+        List<String> classNameList = defaultClassScanner.getClassNameList();
         for (int i = 0; i < classNameList.size(); i++) {
             try {
                 Class<?> aClass = Class.forName(classNameList.get(i));
@@ -96,10 +105,11 @@ public class YamlObjectFactory implements ConfigObjectFactory {
                 if (configValue != null){
                     String rootEventName = configValue.value();
                     //获取到对应的根配置
-                    event = rootMap.get(rootEventName);
+                    event = configMap.get(rootEventName);
                     if (event == null){
                         throw new ConfigEventNotFoundException(rootEventName);
                     }
+                    //检查仓库内是否已经创建这个配置实例
                     if (wareHouse.get(rootEventName) == null){
                         //创建Yaml配置对象，注入依赖，存入仓库
                         Object object = createObject(aClass, event);

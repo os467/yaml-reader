@@ -1,6 +1,7 @@
-package com.os467;
+package com.os467.lib.yaml;
 
-import com.os467.exception.ConfigEventNotFoundException;
+import com.os467.lib.ConfigEvent;
+import com.os467.lib.exception.ConfigEventNotFoundException;
 
 import java.util.ArrayList;
 import java.util.HashMap;

@@ -1,4 +1,6 @@
-package com.os467.annotation.yamlConfig;
+package com.os467.lib.annotation.yamlConfig;
+
+import com.os467.lib.annotation.SingletonObject;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -36,6 +38,7 @@ import java.lang.annotation.Target;
  * must be present in the configuration file.
  *
  */
+@SingletonObject
 @Target({ElementType.FIELD,ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
 public @interface YamlConfigValue {

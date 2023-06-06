@@ -1,17 +1,17 @@
-package com.os467;
+package com.os467.lib.yaml;
 
 
-import com.os467.exception.ConfigReadException;
+import com.os467.lib.ConfigReader;
+import com.os467.lib.EncodeUtils;
+import com.os467.lib.exception.ConfigReadException;
 
 import java.io.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Stack;
 
-public class YamlReader extends AbstractConfigReader{
-
-    //yaml文件路径
-    public String YAML_LOCATION = System.getProperty("user.dir") + "\\resources\\config\\wallpaper.yml";
+public class YamlReader implements ConfigReader {
 
     //缓冲读取器
     private BufferedReader bufferedReader;
@@ -28,18 +28,26 @@ public class YamlReader extends AbstractConfigReader{
     //当前处理的根配置项
     private YamlConfigEvent rootEvent;
 
-    @Override
+    private ConfigResources configResources;
+
+    public void registerConfigResources(ConfigResources configResources){
+        this.configResources = configResources;
+    }
+
     public Map readConfig() {
-        readYaml();
+        List<String> resources = configResources.getResources();
+        for (String resource : resources) {
+            readYaml(resource);
+        }
         return rootMap;
     }
 
-    private void readYaml() {
-        File file = new File(YAML_LOCATION);
+    private void readYaml(String yamlLocation) {
+        File file = new File(yamlLocation);
         try {
             String charset = null;
             try {
-                charset = EncodeUtils.getEncode(YAML_LOCATION, true);
+                charset = EncodeUtils.getEncode(yamlLocation, true);
             } catch (Exception e) {
                 e.printStackTrace();
             }

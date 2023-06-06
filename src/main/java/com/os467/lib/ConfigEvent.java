@@ -1,4 +1,4 @@
-package com.os467;
+package com.os467.lib;
 
 public interface ConfigEvent {
 }

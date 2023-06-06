@@ -1,0 +1,26 @@
+root:
+  run: true
+  list:
+    - 1
+    - 2
+    - 3
+  map:
+    - true
+    - false
+    - false
+  boolean: true
+  char: w
+  byte: 1
+  short: 1
+  double: 1.0
+  float: 3.4
+  int: 123
+  long: 12
+  test: "test"
+  animate:
+    enable: true
+    mediaFilePath: \resources\media
+
+    media: sea.mp4
+    # annotation
+    audio: true
